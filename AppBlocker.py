@@ -35,8 +35,8 @@ def ADDAPP():
 		filetypes=[("Performing files", "*.exe"), ("All files", "*.*")]
 	)
 	try:
-		if path != "" and path.endswith(".exe") and path not in data.get("apps", [] and
-			os.path.normpath(path) != os.path.normpath(myPath)):
+		if path != "" and path.endswith(".exe") and path not in data.get("apps", []) and os.path.normpath(path) != os.path.normpath(myPath):
+
 			new_index = len(data.get("apps", []))
 			name = os.path.basename(path)
 			app_listbox.insert("", "end", iid=str(new_index), text=name)
