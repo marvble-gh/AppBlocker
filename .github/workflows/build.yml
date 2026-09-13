@@ -40,10 +40,10 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          dist/AppBlocker.exe
-          dist/AppBlockerWatchdog.exe
-          dist/appBlockerIconImage.png
-          dist/appBlockerKeyImage.ico
+          AppBlocker.exe
+          AppBlockerWatchdog.exe
+          appBlockerIconImage.png
+          appBlockerKeyImage.ico
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
