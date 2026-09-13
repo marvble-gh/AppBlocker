@@ -34,7 +34,7 @@ jobs:
     - name: Copy required image files next to the exe
       run: |
         copy appBlockerIconImage.png dist\
-        copy appBlockerKeyImage.png dist\
+        copy appBlockerKeyImage.ico dist\
 
     - name: (Release)
       uses: softprops/action-gh-release@v2
@@ -43,7 +43,7 @@ jobs:
           dist/AppBlocker.exe
           dist/AppBlockerWatchdog.exe
           dist/appBlockerIconImage.png
-          dist/appBlockerKeyImage.png
+          dist/appBlockerKeyImage.ico
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
