@@ -21,4 +21,5 @@ Name: "{group}\AppBlocker"; Filename: "{app}\AppBlocker.exe"
 Name: "{commondesktop}\AppBlocker"; Filename: "{app}\AppBlocker.exe"
 
 [Run]
+Filename: "{sys}\ie4uinit.exe"; Parameters: "-ClearIconCache"; Flags: runhidden
 Filename: "{app}\AppBlocker.exe"; Description: "Launch AppBlocker"; Flags: postinstall nowait skipifsilent
