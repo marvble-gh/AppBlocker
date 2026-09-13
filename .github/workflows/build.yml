@@ -36,17 +36,6 @@ jobs:
         copy appBlockerIconImage.png dist\
         copy appBlockerKeyImage.ico dist\
 
-    - name: (Release)
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          AppBlocker.exe
-          AppBlockerWatchdog.exe
-          appBlockerIconImage.png
-          appBlockerKeyImage.ico
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Install Inno Setup
       run: choco install innosetup -y
 
