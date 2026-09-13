@@ -15,7 +15,6 @@ Source: "dist\AppBlockerWatchdog.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\appBlockerIconImage.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\appBlockerKeyImage.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "MainIcon.ico"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\appBlockerKeyImage.png"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\AppBlocker"; Filename: "{app}\AppBlocker.exe"
@@ -23,5 +22,3 @@ Name: "{commondesktop}\AppBlocker"; Filename: "{app}\AppBlocker.exe"
 
 [Run]
 Filename: "{app}\AppBlocker.exe"; Description: "Launch AppBlocker"; Flags: postinstall nowait skipifsilent
-Filename: "{app}\AppBlocker.exe"; Description: "Launch AppBlocker"; Flags: postinstall nowait skipifsilent
-
