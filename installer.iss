@@ -1,7 +1,7 @@
 [Setup]
 AppName=AppBlocker
 AppVersion=1.0
-DefaultDirName={autopf}\AppBlocker
+DefaultDirName={localappdata}\AppBlocker
 DefaultGroupName=AppBlocker
 OutputDir=installer_output
 OutputBaseFilename=AppBlockerSetup
