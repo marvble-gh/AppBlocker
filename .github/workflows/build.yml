@@ -46,3 +46,17 @@ jobs:
           dist/appBlockerKeyImage.png
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Install Inno Setup
+      run: choco install innosetup -y
+
+    - name: Build installer
+      run: iscc installer.iss
+
+    - name: (Release)
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          installer_output/AppBlockerSetup.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

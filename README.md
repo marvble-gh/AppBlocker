@@ -1,1 +1,1 @@
-Install all of the files for the best experience. Try not to separate files from their folder, the program may fail.
+Please install all of the files in the same folder. Not installing all files from release may cause the program to fail.
