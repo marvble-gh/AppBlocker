@@ -35,7 +35,7 @@ def ADDAPP():
 		filetypes=[("Performing files", "*.exe"), ("All files", "*.*")]
 	)
 	try:
-		if path != "" and path.endswith(".exe") and path not in data.get("apps", []) and os.path.normpath(path) != os.path.normpath(myPath):
+		if path != "" and path.endswith(".exe") and path not in data.get("apps", []) and os.path.normcase(os.path.normpath(path)) != os.path.normcase(os.path.normpath(myPath)):
 
 			new_index = len(data.get("apps", []))
 			name = os.path.basename(path)
@@ -83,6 +83,7 @@ def CONTINUE_WITH_CODE():
 	except Exception as e:
 		logging.error(f"Error occurred while trying to set catch_window icon: {e}\n{traceback.format_exc()}")
 
+
 	text1 = tk.Label(enter_code_window, text="Enter code to continue:")
 	text1.pack(pady=(10,0))
 
@@ -93,6 +94,11 @@ def CONTINUE_WITH_CODE():
 	button1 = tk.Button(enter_code_window, text="Enter", command=CHECK_CODE)
 	button1.pack(pady=(10,0))
 	button1.bind("<Return>", lambda e: CHECK_CODE() if not doContinue else None)
+
+	if data.get("code", []) == []:
+		doContinue = True
+		isCorrectCodeEntered = True
+		enter_code_window.destroy()
 
 	enter_code_window.mainloop()
 	isCodeWindowShowing = False
@@ -136,7 +142,7 @@ def ADD_TO_AUTOSTART():
 		value, _ = winreg.QueryValueEx(key, "AppBlocker")
 		winreg.CloseKey(key)
 
-		if os.path.normpath(value) != os.path.normpath(myPath):
+		if os.path.normcase(os.path.normpath(value)) != os.path.normcase(os.path.normpath(myPath)):
 			PATH_OVERWRITE()
 
 	except FileNotFoundError:
@@ -199,7 +205,7 @@ def ASK_FOR_CODE(app_path):
 								if proces.info["exe"] is None:
 									continue  #This proces does not have a path, skip it.
 
-								if os.path.normpath(proces.info["exe"]) == os.path.normpath(locked_path):
+								if os.path.normcase(os.path.normpath(proces.info["exe"])) == os.path.normcase(os.path.normpath(locked_path)):
 									matching_processes.append(proces)
 							except (psutil.NoSuchProcess, psutil.AccessDenied):
 								continue
@@ -246,19 +252,21 @@ def MONITORING_FUNCTION_1():
 				json.dump(data, file)
 
 			if len(blockedApps) > 0:
-				isWatchdogRunning = False
-				for proces in psutil.process_iter(["pid", "name", "exe"]):
-					try:
-						if proces.info["exe"] is None:
+				try:
+					isWatchdogRunning = False
+					for proces in psutil.process_iter(["pid", "name", "exe"]):
+						try:
+							if proces.info["exe"] is None:
+								continue
+							if os.path.normcase(os.path.normpath(proces.info["exe"])) == os.path.normcase(os.path.normpath(watchdog_path)):
+								isWatchdogRunning = True
+						except (psutil.NoSuchProcess, psutil.AccessDenied):
 							continue
-						if os.path.normpath(proces.info["exe"]) == os.path.normpath(watchdog_path):
-							isWatchdogRunning = True
-					except (psutil.NoSuchProcess, psutil.AccessDenied):
-						continue
 
-				if not isWatchdogRunning:
-					os.startfile(watchdog_path)
-
+					if not isWatchdogRunning:
+						os.startfile(watchdog_path)
+				except Exception as e:
+					logging.error(f"Error occurred while trying to find/run watchdog in MONITORING_FUNCTION_1: {e}\n{traceback.format_exc()}")
 			for locked_path in blockedApps:
 
 				matching_processes = []
@@ -266,7 +274,7 @@ def MONITORING_FUNCTION_1():
 					try:
 						if proces.info["exe"] is None:
 							continue
-						if os.path.normpath(proces.info["exe"]) == os.path.normpath(locked_path):
+						if os.path.normcase(os.path.normpath(proces.info["exe"])) == os.path.normcase(os.path.normpath(locked_path)):
 							matching_processes.append(proces)
 					except (psutil.NoSuchProcess, psutil.AccessDenied):
 						continue
@@ -291,21 +299,14 @@ def MONITORING_FUNCTION_1():
 
 watchdogPathConfirmed = False
 
-if getattr(sys, "frozen", False):
-	#RUNNING IN EXE (sys "frozen" = True)
-	myPath = sys.executable
-	folder = os.path.dirname(myPath)
-	ADD_TO_AUTOSTART()
-	appBlockerPath = myPath
-	try:
-		watchdog_path = os.path.join(folder, "AppBlockerWatchdog.exe")
-	except Exception as e:
-		logging.error("APPBLOCKERWATCHOG NOT FOUND, PLEASE TRY REINSTALLING ASAP.")
-else:
-	#RUNNING IN PYCHARM (sys "frozen" = False)
-	myPath = __file__
-	folder = os.path.dirname(myPath)
-	appBlockerPath = __file__
+myPath = sys.executable
+folder = os.path.dirname(myPath)
+ADD_TO_AUTOSTART()
+appBlockerPath = myPath
+try:
+	watchdog_path = os.path.join(folder, "AppBlockerWatchdog.exe")
+except Exception as e:
+	logging.error("APPBLOCKERWATCHOG NOT FOUND, PLEASE TRY REINSTALLING ASAP.")
 
 
 data_path = os.path.join(folder, "data.json")
