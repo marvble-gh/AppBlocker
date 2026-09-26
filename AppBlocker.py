@@ -57,101 +57,64 @@ def LOADAPPS():
 	except Exception as e:
 		logging.error(f"Error occurred while running LOADAPPS: {e}\n{traceback.format_exc()}")
 
+def CONTINUE_WITH_CODE():
+	global doContinue, isCorrectCodeEntered, isCodeWindowShowing
+	doContinue = False
+	isCorrectCodeEntered = False
+
+	def CHECK_CODE():
+		global doContinue, isCorrectCodeEntered
+		if entry1.get() == data.get("code", []):
+			doContinue = True
+			isCorrectCodeEntered = True
+			enter_code_window.destroy()
+
+
+	enter_code_window = tk.Tk()
+	enter_code_window.geometry("250x150")
+	enter_code_window.resizable(False, False)
+	enter_code_window.title("Enter code.")
+	enter_code_window.grab_set()
+
+	isCodeWindowShowing = True
+
+	try:
+		enter_code_window.iconbitmap(KeyIconPath)  # .ico required
+	except Exception as e:
+		logging.error(f"Error occurred while trying to set catch_window icon: {e}\n{traceback.format_exc()}")
+
+	text1 = tk.Label(enter_code_window, text="Enter code to continue:")
+	text1.pack(pady=(10,0))
+
+	entry1 = tk.Entry(enter_code_window, show="*")
+	entry1.pack(pady=(10,0))
+	entry1.focus_force()
+
+	button1 = tk.Button(enter_code_window, text="Enter", command=CHECK_CODE)
+	button1.pack(pady=(10,0))
+	button1.bind("<Return>", lambda e: CHECK_CODE() if not doContinue else None)
+
+	enter_code_window.mainloop()
+	isCodeWindowShowing = False
+	doContinue = False
+
 def SAVE_CODE():
 	try:
-
-		# =====================================OPTIONAL=============================================
-		def SAVE_CODE_WINDOW():
-			global isFirstButtonClicked
-			isFirstButtonClicked = False
-
-			# Creates a new tkinter top level window to make a new code verification.
-			# It prevents from cracking the code that easily.
-			def CHECK_FIRST_CODE():
-				global isFirstButtonClicked
-				if code1.get() == data["code"] and not isFirstButtonClicked:
-					isFirstButtonClicked = True
-					save_code_window.geometry("300x225")
-					Text2 = tk.Label(save_code_window, text="Confirm saved code:")
-					Text2.pack(pady=(10, 0))
-
-					code2 = tk.Entry(save_code_window, show="*")
-					code2.pack()
-					code2.focus_force()
-					code2.bind("<Return>", lambda e: CHECK_FIRST_CODE() if not isFirstButtonClicked else CHECK_SECOND_CODE())
-
-					code2_button = tk.Button(
-						save_code_window,
-						text="confirm",
-						command=lambda: CHECK_SECOND_CODE(code2),
-					)
-					code2_button.pack(pady=(10, 0))
-
-			def CHECK_SECOND_CODE(code2):
-				if code2.get() == data["code"]:
-					saved_code = code_frame.get()
-					data["code"] = saved_code
-					save_code_window.destroy()
-
-			def CATCH_WINDOW():
-				def CLOSE_SAVE_CODE_WINDOW():
-					save_code_window.destroy()
-				def CLOSE_CATCH_WINDOW():
-					catch_window.destroy()
-					save_code_window.grab_set()
-
-				catch_window = tk.Toplevel(save_code_window)
-				catch_window.geometry("225x150")
-				catch_window.title(" ")
-				catch_window.resizable(width=False, height=False)
-				catch_window.grab_set()
-
-				text1 = tk.Label(catch_window, text="New password won't be set.")
-				text2 = tk.Label(catch_window, text="Are you sure?")
-				text1.pack(pady=(10,10))
-				text2.pack(pady=(10,10))
-
-				frame = tk.Frame(catch_window)
-				frame.pack(pady=(20,5))
-
-				button1 = tk.Button(frame,text="Yes", command=CLOSE_SAVE_CODE_WINDOW)
-				button1.pack(side="left", padx=(30,0))
-
-				button2 = tk.Button(frame, text="No", command=CLOSE_CATCH_WINDOW)
-				button2.pack(side="left", padx=(30, 0))
-
-
-			save_code_window = tk.Toplevel(window)
-			save_code_window.geometry("300x125")
-			save_code_window.title("Confirm the code.")
-			save_code_window.transient(window)
-			save_code_window.grab_set()
-
-			Text1 = tk.Label(
-				save_code_window,
-				text="To change the code, you must enter previous code:",
-			)
-			Text1.pack(pady=(10, 0))
-
-			code1 = tk.Entry(save_code_window, show="*")
-			code1.pack()
-			code1.focus_force()
-			code1.bind("<Return>", lambda e: CHECK_FIRST_CODE() if not isFirstButtonClicked else CHECK_SECOND_CODE())
-
-			code1_button = tk.Button(save_code_window, text="confirm", command=CHECK_FIRST_CODE)
-			code1_button.pack(pady=(10, 0))
-
-			save_code_window.protocol("WM_DELETE_WINDOW", CATCH_WINDOW)
-			save_code_window.wait_window()
-
-		# ===========================================================================================
+		global doContinue, isCodeWindowShowing
 
 		if not isCodeWindowShowing:
 			if data.get("code", []) == [] or code_frame.get() == data.get("code", []):
 				saved_code = code_frame.get()
 				data["code"] = saved_code
-			elif data.get("code", []) != []:
-				SAVE_CODE_WINDOW()
+			else:
+				CONTINUE_WITH_CODE()
+				if doContinue:
+					saved_code = code_frame.get()
+					data["code"] = saved_code
+				else:
+					logging.ERROR("doContinue false")
+
+
 
 	except Exception as e:
 		logging.error(f"Error occurred while running SAVE_CODE: {e}\n{traceback.format_exc()}")
@@ -216,7 +179,9 @@ def COPY_PATH():
 
 
 def ASK_FOR_CODE(app_path):
-	global isCorrectCodeEntered, isCodeWindowShowing
+	global isCorrectCodeEntered, isCodeWindowShowing, doContinue
+	isCodeWindowShowing = False
+	isCorrectCodeEntered = False
 
 	def MONITORING_FUNCTION_2(): #This monitoring thread works only while the code_window is showing.
 								# Its job is to kill EVERY blocked app (unless the app is in 'unlocked{}' dict) while code_window is showing.
@@ -254,57 +219,19 @@ def ASK_FOR_CODE(app_path):
 
 		except Exception as e:
 			logging.error(f"Error occurred while running MONITORING_FUNCTION_2: {e}\n{traceback.format_exc()}")
+	try:
 
-	def ENTER_CODE():
-		global isCorrectCodeEntered, isCodeWindowShowing
-
-		entered_code = check_code.get()
-		if entered_code == data["code"]:
+		threading.Thread(target=MONITORING_FUNCTION_2, daemon=True).start(); CONTINUE_WITH_CODE()
+		if doContinue:
 			isCorrectCodeEntered = True
 
 			os.startfile(app_path)
-			unlocked[app_path] = True #app_path is locked_path from monitoring thread 1, under different name.
-
-		code_window.destroy()
-		isCodeWindowShowing = False
-
-	try:
-
-		code_window = tk.Tk()
-		code_window.geometry("275x100")
-		code_window.title("Enter Code.")
-		code_window.resizable(False, False)
-		try:
-			code_window.iconbitmap(KeyIconPath)  # .ico required
-		except Exception as e:
-			logging.error(f"Error occurred while trying to set code_window icon: {e}\n{traceback.format_exc()}")
-
-		CodeWindowTitle = tk.Label(code_window, text="Unlock App")
-		CodeWindowTitle.pack()
-
-		check_code = tk.Entry(code_window)
-		check_code.pack()
-		check_code.focus_force()
-		check_code.bind("<Return>", lambda e: ENTER_CODE())
+			unlocked[app_path] = True  # app_path is locked_path from monitoring thread 1, under different name.
+			isCorrectCodeEntered = False
 
 
-		enter_button = tk.Button(code_window, text="Enter", command=ENTER_CODE)
-		enter_button.pack()
-
-		isCodeWindowShowing = True
-
-		code_window.grab_set()
-
-		MONITORING_THREAD_2 = threading.Thread(target=MONITORING_FUNCTION_2, daemon=True)
-		MONITORING_THREAD_2.start()
-
-
-		code_window.mainloop()
-
-		isCodeWindowShowing = False
-		isCorrectCodeEntered = False
 	except Exception as e:
-		logging.error(f"Error occurred while running ENTER_CODE function: {e}\n{traceback.format_exc()}")
+		logging.error(f"Error occurred while running ASK_FOR_CODE function: {e}\n{traceback.format_exc()}")
 
 
 
@@ -413,6 +340,7 @@ except:
 
 isCodeWindowShowing = False
 isCorrectCodeEntered = False
+doContinue = False
 
 #=======================WIDGETS============================
 
