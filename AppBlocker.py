@@ -64,7 +64,7 @@ def CONTINUE_WITH_CODE():
 
 	def CHECK_CODE():
 		global doContinue, isCorrectCodeEntered
-		if entry1.get() == data.get("code", []):
+		if entry1.get() == data.get("code", ""):
 			doContinue = True
 			isCorrectCodeEntered = True
 			enter_code_window.destroy()
@@ -90,26 +90,26 @@ def CONTINUE_WITH_CODE():
 	entry1 = tk.Entry(enter_code_window, show="*")
 	entry1.pack(pady=(10,0))
 	entry1.focus_force()
+	entry1.bind("<Return>", lambda e: CHECK_CODE() if not doContinue else None)
+
 
 	button1 = tk.Button(enter_code_window, text="Enter", command=CHECK_CODE)
 	button1.pack(pady=(10,0))
-	button1.bind("<Return>", lambda e: CHECK_CODE() if not doContinue else None)
 
-	if data.get("code", []) == []:
+	if data.get("code", "") == "":
 		doContinue = True
 		isCorrectCodeEntered = True
 		enter_code_window.destroy()
 
 	enter_code_window.mainloop()
 	isCodeWindowShowing = False
-	doContinue = False
 
 def SAVE_CODE():
 	try:
 		global doContinue, isCodeWindowShowing
 
 		if not isCodeWindowShowing:
-			if data.get("code", []) == [] or code_frame.get() == data.get("code", []):
+			if data.get("code", "") == "" or code_frame.get() == data.get("code", ""):
 				saved_code = code_frame.get()
 				data["code"] = saved_code
 			else:
@@ -117,13 +117,15 @@ def SAVE_CODE():
 				if doContinue:
 					saved_code = code_frame.get()
 					data["code"] = saved_code
-				else:
-					logging.ERROR("doContinue false")
-
-
+					with open(data_path, "w") as f:
+						json.dump(data, f)
 
 	except Exception as e:
 		logging.error(f"Error occurred while running SAVE_CODE: {e}\n{traceback.format_exc()}")
+	finally:
+		doContinue = False
+		isCodeWindowShowing = False
+
 def ADD_TO_AUTOSTART():
 	def PATH_OVERWRITE():
 		key = winreg.OpenKey(
@@ -186,60 +188,62 @@ def COPY_PATH():
 
 def ASK_FOR_CODE(app_path):
 	global isCorrectCodeEntered, isCodeWindowShowing, doContinue
-	isCodeWindowShowing = False
+	isCodeWindowShowing = True
 	isCorrectCodeEntered = False
 
 	def MONITORING_FUNCTION_2(): #This monitoring thread works only while the code_window is showing.
 								# Its job is to kill EVERY blocked app (unless the app is in 'unlocked{}' dict) while code_window is showing.
 		try:
 			global isCorrectCodeEntered, isCodeWindowShowing
-			if isDataLoaded:
-				blockedApps = data.setdefault("apps", [])  # kopia "apps z słownika
-				while isCodeWindowShowing and not isCorrectCodeEntered:
-					for locked_path in blockedApps:
+			blockedApps = data.setdefault("apps", [])  # kopia "apps z słownika
+			while isCodeWindowShowing and not isCorrectCodeEntered:
+				for locked_path in blockedApps:
 
-						matching_processes = []
-						for proces in psutil.process_iter(["pid", "name", "exe"]):
-							try:
+					matching_processes = []
+					for proces in psutil.process_iter(["pid", "name", "exe"]):
+						try:
 
-								if proces.info["exe"] is None:
-									continue  #This proces does not have a path, skip it.
+							if proces.info["exe"] is None:
+								continue  #This proces does not have a path, skip it.
 
-								if os.path.normcase(os.path.normpath(proces.info["exe"])) == os.path.normcase(os.path.normpath(locked_path)):
-									matching_processes.append(proces)
-							except (psutil.NoSuchProcess, psutil.AccessDenied):
-								continue
-
-						if len(matching_processes) == 0: #User completely closed unlocked program, set it back to locked.
-							unlocked[locked_path] = False
+							if os.path.normcase(os.path.normpath(proces.info["exe"])) == os.path.normcase(os.path.normpath(locked_path)):
+								matching_processes.append(proces)
+						except (psutil.NoSuchProcess, psutil.AccessDenied):
 							continue
 
-						if unlocked.get(locked_path, False) == True: #matching_processes is not empty, if locked_path is in unlocked, don't do anything.
-							continue
+					if len(matching_processes) == 0: #User completely closed unlocked program, set it back to locked.
+						unlocked[locked_path] = False
+						continue
 
-						if not isCorrectCodeEntered:
+					if unlocked.get(locked_path, False) == True: #matching_processes is not empty, if locked_path is in unlocked, don't do anything.
+						continue
+
+					if not isCorrectCodeEntered:
+						try:
 							for proces in matching_processes:
 								proces.kill()
+						except Exception as e:
+							logging.error(f"Error occurred while trying to kill a program in MONITORING_FUNCTION_2: {e}\n{traceback.format_exc()}")
 
-					time.sleep(1)
+				time.sleep(1)
 
 		except Exception as e:
 			logging.error(f"Error occurred while running MONITORING_FUNCTION_2: {e}\n{traceback.format_exc()}")
 	try:
 
-		threading.Thread(target=MONITORING_FUNCTION_2, daemon=True).start(); CONTINUE_WITH_CODE()
+		threading.Thread(target=MONITORING_FUNCTION_2, daemon=True).start()
+		CONTINUE_WITH_CODE()
 		if doContinue:
-			isCorrectCodeEntered = True
-
 			os.startfile(app_path)
 			unlocked[app_path] = True  # app_path is locked_path from monitoring thread 1, under different name.
-			isCorrectCodeEntered = False
-
 
 	except Exception as e:
 		logging.error(f"Error occurred while running ASK_FOR_CODE function: {e}\n{traceback.format_exc()}")
 
-
+	finally:
+		doContinue = False
+		isCorrectCodeEntered = False
+		isCodeWindowShowing = False
 
 def MONITORING_FUNCTION_1():
 	try:
@@ -287,7 +291,11 @@ def MONITORING_FUNCTION_1():
 					continue
 
 				for proces in matching_processes:
-					proces.kill()
+					try:
+						proces.kill()
+					except Exception as e:
+						logging.error(
+							f"Error occurred while trying to kill a program in MONITORING_FUNCTION_1: {e}\n{traceback.format_exc()}")
 
 				ASK_FOR_CODE(locked_path)
 
@@ -323,7 +331,6 @@ menu = pystray.Menu(
 tray_icon = pystray.Icon(programName, image, "App Blocker", menu)
 
 isWatchdogRunning = False
-isDataLoaded = False
 
 window = tk.Tk()
 window.title("App Blocker")
@@ -383,7 +390,6 @@ try:
 		if len(text) > 0:
 			data = json.loads(text)
 			LOADAPPS()
-			isDataLoaded = True
 
 	data["AppBlockerName"] = programName
 
