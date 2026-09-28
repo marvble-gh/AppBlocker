@@ -70,7 +70,7 @@ def CONTINUE_WITH_CODE():
 			enter_code_window.destroy()
 
 
-	enter_code_window = tk.Tk()
+	enter_code_window = tk.Toplevel(window)
 	enter_code_window.geometry("250x150")
 	enter_code_window.resizable(False, False)
 	enter_code_window.title("Enter code.")
@@ -101,7 +101,7 @@ def CONTINUE_WITH_CODE():
 		isCorrectCodeEntered = True
 		enter_code_window.destroy()
 
-	enter_code_window.mainloop()
+	window.wait_window(enter_code_window)
 	isCodeWindowShowing = False
 
 def SAVE_CODE():
